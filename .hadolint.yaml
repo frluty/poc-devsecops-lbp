@@ -1,0 +1,4 @@
+ignore:
+  # DL3007 : tag "latest" autorisé car les images sont épinglées par digest SHA256
+  # Le digest est immuable — plus sécurisé qu'un tag de version mutable
+  - DL3007
