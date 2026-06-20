@@ -2,39 +2,22 @@ name: DevSecOps Pipeline POC
 
 on:
   push:
-    branches: [main,master]
+    branches: [main, master]
   pull_request:
-    branches: [main,master]
+    branches: [main, master]
 
 permissions:
   contents: read
   security-events: write
   pull-requests: write
+  packages: write
+  id-token: write
+  attestations: write
+  actions: read
 
 jobs:
 
-  # ── 1. CodeQL SAST ────────────────────────
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python
-          queries: security-extended
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
-
-      - name: Analyze
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:python"
-
-  # ── 2. Secret Detection ───────────────────
+  # ── 1. Secret Detection ─────────────────────────────────────────────────────
   secrets-scan:
     name: Secret Scanning
     runs-on: ubuntu-latest
@@ -48,28 +31,24 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ── 3. Docker Build + Trivy ───────────────
-  docker-security:
-    name: Docker Security
-    runs-on: ubuntu-latest
-    needs: [codeql, secrets-scan]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build image
-        run: docker build -t app-demo:${{ github.sha }} .
-
-      - name: Trivy scan image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: app-demo:${{ github.sha }}
-          format: sarif
-          output: trivy-image.sarif
-          severity: CRITICAL,HIGH
-          exit-code: 1
-
-      - name: Upload résultats GHAS
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: trivy-image.sarif
+  # ── 2. Security Pipeline (detect + ANSSI harden + CodeQL + Trivy + build + sign) ──
+  security:
+    name: Security Pipeline
+    needs: secrets-scan
+    uses: frluty/pipeline-security/.github/workflows/reusable-security.yml@main
+    with:
+      language: python
+      image_name: ${{ github.event.repository.name }}
+      registry_type: ghcr
+      enable_signing: true
+      signing_mode: keyless
+      severity: CRITICAL,HIGH
+      fail_on_vulnerability: true
+    secrets: inherit
+    permissions:
+      contents: read
+      security-events: write
+      packages: write
+      id-token: write
+      attestations: write
+      actions: read
