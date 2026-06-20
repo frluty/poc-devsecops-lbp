@@ -1,0 +1,4 @@
+# Trivy ignore file
+# Format : CVE-XXXX-XXXXX
+# Exemple pour ignorer une CVE spécifique :
+# CVE-2023-12345
