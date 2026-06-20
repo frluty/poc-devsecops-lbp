@@ -1,11 +1,11 @@
 # Stage 1 — Build
-FROM cgr.dev/chainguard/python:latest-dev AS builder
+FROM cgr.dev/chainguard/python:3.12-dev AS builder
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir --target /app/deps -r requirements.txt
 
 # Stage 2 — Runtime Chainguard (zéro CVE, zéro shell, non-root par défaut)
-FROM cgr.dev/chainguard/python:latest
+FROM cgr.dev/chainguard/python:3.12
 
 WORKDIR /app
 
