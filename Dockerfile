@@ -20,7 +20,7 @@ COPY --from=builder /usr/local/lib/python3.12 \
      /usr/local/lib/python3.12
 COPY src/ .
 
-# Recommandation ANSSI — utilisateur non root
+# Recommandation ANSSI — utilisateur non root 
 RUN groupadd -r appuser && \
     useradd -r -g appuser appuser && \
     chown -R appuser:appuser /app
