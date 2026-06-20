@@ -1,17 +1,14 @@
 # Stage 1 — Build
-FROM python:3.12-slim AS builder
+FROM python:3.12-alpine AS builder
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Stage 2 — Runtime minimal 
-FROM python:3.12-slim
+# Stage 2 — Runtime minimal
+FROM python:3.12-alpine
 
-# Mise à jour des packages système
-RUN apt-get update && \
-    apt-get upgrade -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# curl pour le healthcheck
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
@@ -20,10 +17,10 @@ COPY --from=builder /usr/local/lib/python3.12 \
      /usr/local/lib/python3.12
 COPY src/ .
 
-# Recommandation ANSSI — utilisateur non  root 
-RUN groupadd -r appuser && \
-    useradd -r -g appuser appuser && \
-    chown -R appuser:appuser /app
+# Recommandation ANSSI — utilisateur non root
+RUN addgroup -S appgroup && \
+    adduser -S appuser -G appgroup && \
+    chown -R appuser:appgroup /app
 USER appuser
 
 EXPOSE 8080
