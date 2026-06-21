@@ -1,0 +1,29 @@
+services:
+  app:
+    image: ghcr.io/frluty/poc-devsecops-lbp:latest
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/health')"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /root/.docker/config.json:/config.json:ro
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=300      # vérifie toutes les 5 min
+      - WATCHTOWER_CLEANUP=true           # supprime les anciennes images
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+    command: app                          # surveille uniquement le service "app"

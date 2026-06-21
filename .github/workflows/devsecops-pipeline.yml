@@ -1,54 +1,37 @@
-name: DevSecOps Pipeline POC
+name: DevSecOps Pipeline
 
 on:
   push:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
-  security-events: write
-  pull-requests: write
-  packages: write
-  id-token: write
-  attestations: write
-  actions: read
 
 jobs:
 
-  # ── 1. Secret Detection ─────────────────────────────────────────────────────
-  secrets-scan:
-    name: Secret Scanning
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Gitleaks scan
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # ── 2. Security Pipeline (detect + ANSSI harden + CodeQL + Trivy + build + sign)  ──
   security:
     name: Security Pipeline
-    needs: secrets-scan
     uses: frluty/pipeline-security/.github/workflows/reusable-security.yml@main
+    permissions:
+      contents:        read
+      security-events: write
+      packages:        write
+      id-token:        write
+      attestations:    write
+      actions:         read
     with:
-      language: python
-      image_name: ${{ github.event.repository.name }}
-      registry_type: ghcr
-      enable_signing: true
-      signing_mode: keyless
-      severity: CRITICAL,HIGH
+      language:              python
+      image_name:            ${{ github.event.repository.name }}
+      registry_type:         ghcr
+      enable_signing:        true
+      signing_mode:          keypair
+      severity:              CRITICAL,HIGH
       fail_on_vulnerability: true
     secrets: inherit
-    permissions:
-      contents: read
-      security-events: write
-      packages: write
-      id-token: write
-      attestations: write
-      actions: read
